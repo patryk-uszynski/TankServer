@@ -2,20 +2,21 @@
 
 namespace App;
 
-use Ratchet\Http\HttpServerInterface;
+use SplObjectStorage;
 use Ratchet\ConnectionInterface;
+use Ratchet\MessageComponentInterface;
 use Guzzle\Http\Message\RequestInterface;
 
-class Chat implements HttpServerInterface {
+class TestServer implements MessageComponentInterface {
+
     protected $clients;
 
     public function __construct() {
-        $this->clients = new \SplObjectStorage;
+        $this->clients = new SplObjectStorage;
     }
 
     public function onOpen(ConnectionInterface $conn, RequestInterface $request = null) {
         $this->clients->attach($conn);
-
         echo "New connection! ({$conn->resourceId})\n";
     }
 
@@ -27,30 +28,22 @@ class Chat implements HttpServerInterface {
         $data = json_decode($msg);
 
         foreach ($this->clients as $client) {
-            if ($from !== $client) {
-                // The sender is not the receiver, send to each client connected
-
-                $packet = json_encode(array(
-                  'id' => $from->resourceId,
-                  'x' => $data->x,
-                  'y' => $data->y
-                ));
-
-                $client->send($msg);
-            }
+            $packet = json_encode(array(
+              'id' => $from->resourceId,
+              'x' => $data->x,
+              'y' => $data->y
+            ));
+            if ($from !== $client) $client->send($packet);
         }
     }
 
     public function onClose(ConnectionInterface $conn) {
-        // The connection is closed, remove it, as we can no longer send it messages
         $this->clients->detach($conn);
-
         echo "Connection {$conn->resourceId} has disconnected\n";
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e) {
         echo "An error has occurred: {$e->getMessage()}\n";
-
         $conn->close();
     }
 }
