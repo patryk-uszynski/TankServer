@@ -32,7 +32,10 @@ class TestServer implements MessageComponentInterface {
               'id' => $from->resourceId,
               'type' => 'update',
               'x' => $data->x,
-              'y' => $data->y
+              'y' => $data->y,
+              'velocity' => $data->velocity,
+              'tankRotation' => $data->tankRotation,
+              'turretRotation' => $data->turretRotation
             ));
             if ($from !== $client) $client->send($packet);
         }
