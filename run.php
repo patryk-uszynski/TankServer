@@ -9,5 +9,5 @@ use App\TestServer;
 
 $http = new HttpServer(new WsServer(new TestServer));
 
-$server = IoServer::factory($http, 8080);
+$server = IoServer::factory($http, 8087);
 $server->run();
