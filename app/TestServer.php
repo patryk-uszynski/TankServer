@@ -1,5 +1,7 @@
 <?php
-namespace MyApp;
+
+namespace App;
+
 use Ratchet\Http\HttpServerInterface;
 use Ratchet\ConnectionInterface;
 use Guzzle\Http\Message\RequestInterface;
