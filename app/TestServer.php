@@ -30,6 +30,7 @@ class TestServer implements MessageComponentInterface {
         foreach ($this->clients as $client) {
             $packet = json_encode(array(
               'id' => $from->resourceId,
+              'type' => 'update',
               'x' => $data->x,
               'y' => $data->y
             ));
@@ -38,8 +39,16 @@ class TestServer implements MessageComponentInterface {
     }
 
     public function onClose(ConnectionInterface $conn) {
+        $packet = json_encode(array(
+            'id' => $conn->resourceId,
+            'type' => 'disconnect'
+        ));
+
         $this->clients->detach($conn);
-        echo "Connection {$conn->resourceId} has disconnected\n";
+
+        foreach ($this->clients as $client) {
+          $client->send($packet);
+        }
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e) {
