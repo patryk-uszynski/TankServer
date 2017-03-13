@@ -6,39 +6,70 @@ use SplObjectStorage;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
 use Guzzle\Http\Message\RequestInterface;
+use App\Player;
 
 class TestServer implements MessageComponentInterface {
 
+    protected $players;
     protected $clients;
 
     public function __construct() {
+        $this->players = array();
         $this->clients = new SplObjectStorage;
+    }
+
+    public function tick() {
+        $packets = array();
+
+        foreach ($this->players as $player) {
+            if(!$player->isUpdateNeeded()) continue;
+
+            $packet = json_encode(array(
+                'id' => $player->getConnection()->resourceId,
+                'type' => 'update',
+                'x' => $player->x,
+                'y' => $player->y,
+                'velocity' => 0,
+                'tankRotation' => $player->tankRotation,
+                'turretRotation' => $player->turretRotation
+            ));
+
+            $packets[$player->getConnection()->resourceId] = $packet;
+
+            $player->setStatus(Player::STATUS_IDLE);
+        }
+
+        
+        foreach ($this->clients as $client) {
+            foreach ($packets as $from => $packet) {
+                if ($from !== $client->resourceId) 
+                    $client->send($packet);
+            }           
+        }
     }
 
     public function onOpen(ConnectionInterface $conn, RequestInterface $request = null) {
         $this->clients->attach($conn);
-        echo "New connection! ({$conn->resourceId})\n";
+
+        $player = new Player(); 
+        $player->setConnection($conn);
+
+        $this->players[$conn->resourceId] = ($player);
+
+        echo "New player connected! ({$conn->resourceId})\n";
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
-        $numRecv = count($this->clients) - 1;
-        echo sprintf('Connection %d sending message "%s" to %d other connection%s' . "\n"
-            , $from->resourceId, $msg, $numRecv, $numRecv == 1 ? '' : 's');
-
         $data = json_decode($msg);
 
-        foreach ($this->clients as $client) {
-            $packet = json_encode(array(
-              'id' => $from->resourceId,
-              'type' => 'update',
-              'x' => $data->x,
-              'y' => $data->y,
-              'velocity' => $data->velocity,
-              'tankRotation' => $data->tankRotation,
-              'turretRotation' => $data->turretRotation
-            ));
-            if ($from !== $client) $client->send($packet);
-        }
+        $player = &$this->players[$from->resourceId];
+
+        $player->x = $data->x;
+        $player->y = $data->y;
+        $player->tankRotation = $data->tankRotation;
+        $player->turretRotation = $data->turretRotation;
+
+        $player->setStatus(Player::STATUS_UPDATED);
     }
 
     public function onClose(ConnectionInterface $conn) {
