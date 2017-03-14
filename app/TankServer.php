@@ -8,7 +8,7 @@ use Ratchet\MessageComponentInterface;
 use Guzzle\Http\Message\RequestInterface;
 use App\Player;
 
-class TestServer implements MessageComponentInterface {
+class TankServer implements MessageComponentInterface {
 
     protected $players;
     protected $clients;
@@ -73,6 +73,8 @@ class TestServer implements MessageComponentInterface {
     }
 
     public function onClose(ConnectionInterface $conn) {
+        echo "Player disconnected! ({$conn->resourceId})\n";
+
         $packet = json_encode(array(
             'id' => $conn->resourceId,
             'type' => 'disconnect'
