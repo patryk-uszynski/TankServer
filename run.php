@@ -12,7 +12,7 @@ $http = new HttpServer(new WsServer($testServer));
 
 $server = IoServer::factory($http, 1337);
 
-$ticksPerSecond = 10;
+$ticksPerSecond = !empty($argv[1]) ? : 15;
 
 $server->loop->addPeriodicTimer(1 / $ticksPerSecond, function () use ($testServer) {
 	$testServer->tick();
